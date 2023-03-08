@@ -1,0 +1,21 @@
+{
+  "name": "com.coffee-bean-gaming.open-event-system",
+  "version": "1.0.0",
+  "displayName": "Open Event System",
+  "description": "An Open Source Event System based on Scriptable Objects and custome Editor GUIs.",
+  "unity": "2019.1",
+  "keywords": [
+    "Event",
+    "ScriptableObject",
+    "Scriptable",
+    "Object",
+    "Open Source",
+    "Graphs",
+    "Coffee Bean Gaming"
+  ],
+  "author": {
+    "name": "Connor Marshall",
+    "email": "cm66.work@gmail.com",
+    "url": "https://github.com/cm66Work"
+  }
+}
