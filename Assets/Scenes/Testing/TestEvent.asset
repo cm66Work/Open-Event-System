@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: TestEvent
   m_EditorClassIdentifier: 
   Listeners: []
+  ListenersHistory: []

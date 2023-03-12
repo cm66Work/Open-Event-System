@@ -13,18 +13,32 @@ namespace OpenEvents
     {
         private EventGraph _eventGraph;
 
+        private SerializedObject _serializedObject;
+        private SerializedProperty _currentProperty;
+
         public static void Open(GameEventSO gameEventSO)
         {
-           GameEventSOCustomeEditorWindow window = GetWindow<GameEventSOCustomeEditorWindow>($"Event Graph | {gameEventSO.name}");
+            GameEventSOCustomeEditorWindow window = GetWindow<GameEventSOCustomeEditorWindow>($"Event Graph");
+            window._serializedObject = new SerializedObject(gameEventSO);
+
+            window.ConstructGraph();
+            //window.GenerateToolBar();
         }
 
-        /// <summary>
-        /// Gets triggered when the editor window opens.
-        /// </summary>
-        private void OnEnable()
+
+        ///// <summary>
+        ///// Gets triggered when the editor window opens.
+        ///// </summary>
+        private void ConstructGraph()
         {
-            ConstructGraph();
-            GenerateToolBar();
+
+            _currentProperty = _serializedObject.FindProperty("Listeners");
+            _eventGraph = new EventGraph(_serializedObject, _currentProperty);
+
+
+
+            _eventGraph.StretchToParentSize();
+            rootVisualElement.Add(_eventGraph);
         }
 
         /// <summary>
@@ -50,14 +64,6 @@ namespace OpenEvents
 
             toolbar.Add(nodeCreateButton);
             rootVisualElement.Add(toolbar);
-        }
-
-        private void ConstructGraph()
-        {
-            _eventGraph = new EventGraph();
-
-            _eventGraph.StretchToParentSize();
-            rootVisualElement.Add(_eventGraph);
         }
     }
 }
