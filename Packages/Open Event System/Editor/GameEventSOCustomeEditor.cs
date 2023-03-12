@@ -31,6 +31,8 @@ namespace OpenEvents
             {
                 GameEventSOEditorWindow.Open((GameEventSO)target);
             }
+
+            base.OnInspectorGUI();
         }
     }
 }
