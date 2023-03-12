@@ -9,17 +9,19 @@ namespace OpenEvents
     public class AssetHandler
     {
         [OnOpenAsset()]
-        public static bool OpenEditor(int instanceId, int line)
+        public static bool OpenEditor(int instanceID, int line)
         {
-            GameEventSO gameEventSO = EditorUtility.InstanceIDToObject(instanceId) as GameEventSO;
+            GameEventSO gameEventSO = EditorUtility.InstanceIDToObject(instanceID) as GameEventSO;
             if(gameEventSO != null)
             {
-                GameEventSOEditorWindow.Open(gameEventSO);
+                GameEventSOCustomeEditorWindow.Open(gameEventSO);
                 return true;
-            }
+            }    
+
             return false;
         }
     }
+    
 
 
     [CustomEditor(typeof(GameEventSO))]
@@ -27,10 +29,10 @@ namespace OpenEvents
     {
         public override void OnInspectorGUI()
         {
-            if(GUILayout.Button("Open Graph"))
+            if(GUILayout.Button("Open Graph View"))
             {
-                GameEventSOEditorWindow.Open((GameEventSO)target);
-            }
+                GameEventSOCustomeEditorWindow.Open((GameEventSO)target);
+            }    
 
             base.OnInspectorGUI();
         }

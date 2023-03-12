@@ -30,15 +30,5 @@ namespace OpenEvents
             if(Listeners.Contains(listener))
                 Listeners.Remove(listener);
         }
-
-
-        #region EventGraphs
-        public void CreateEditorGraph()
-        {
-#if UNITY_EDITOR
-            //EventGraphEditorWindow.Open();
-#endif
-        }
-        #endregion
     }
 }

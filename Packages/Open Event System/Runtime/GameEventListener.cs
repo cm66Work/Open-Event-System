@@ -11,18 +11,18 @@ namespace OpenEvents
 
     public class GameEventListener : MonoBehaviour
     {
-        public GameEventSO GameEvent;
+        public GameEventSO GameEventSO;
 
         public CustomeGameEvent Response;
 
         public void OnEnable()
         {
-            GameEvent.RegisterListener(this);
+            GameEventSO.RegisterListener(this);
         }
 
         private void OnDisable()
         {
-            GameEvent.UnregisterListener(this);
+            GameEventSO.UnregisterListener(this);
         }
 
         /// <summary>

@@ -2,27 +2,20 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
 namespace OpenEvents
 {
-    public class GameEventSOEditorWindow : EditorWindow
+
+    public class GameEventSOCustomeEditorWindow : EditorWindow
     {
-        /// <summary>
-        /// Holds the GameEventSO for the current editor window.
-        /// When a new window is opened this is changed to always be relative to the GameEventSO we are working with.
-        /// </summary>
-        private static GameEventSO _currentGameEventOS;
+        private EventGraph _eventGraph;
 
-        private EventGraphView _graphView;
-
-        [MenuItem("Window/Open Event System/Event Graph")]
         public static void Open(GameEventSO gameEventSO)
         {
-            GameEventSOEditorWindow window = GetWindow<GameEventSOEditorWindow>("Event Graph");
-            _currentGameEventOS = gameEventSO;
-            //window.titleContent = new GUIContent("Event Graph");
+           GameEventSOCustomeEditorWindow window = GetWindow<GameEventSOCustomeEditorWindow>($"Event Graph | {gameEventSO.name}");
         }
 
         /// <summary>
@@ -38,12 +31,11 @@ namespace OpenEvents
         /// Gets triggered when the editor window closes.
         /// </summary>
         private void OnDisable()
-        {                               
+        {
             // remove reference to the GameEventSO to protect it from accidental modification whilst the window is closed
-            _currentGameEventOS = null; 
-            rootVisualElement.Remove(_graphView);
+            rootVisualElement.Remove(_eventGraph);
         }
-        
+
 
         // TODO:: This is currently redundant as we wont allow the users to create new blank nodes... maybe.
         private void GenerateToolBar()
@@ -52,7 +44,7 @@ namespace OpenEvents
 
             Button nodeCreateButton = new Button(() =>
             {
-                _graphView.CreateNode("Event Node");
+                //_eventGraph.CreateNode("Event Node");
             });
             nodeCreateButton.text = "Create Node";
 
@@ -62,10 +54,10 @@ namespace OpenEvents
 
         private void ConstructGraph()
         {
-            _graphView = new EventGraphView(name = "Event Graph");
+            _eventGraph = new EventGraph();
 
-            _graphView.StretchToParentSize();
-            rootVisualElement.Add(_graphView);
+            _eventGraph.StretchToParentSize();
+            rootVisualElement.Add(_eventGraph);
         }
     }
 }
