@@ -14,7 +14,8 @@ namespace OpenEvents
         
         private readonly Vector2 _defaultNodeSize = new Vector2(x:150, y:200);
 
-        private EventNode _eventNode;
+        private EventNode _gameEventSONode;
+        private List<EventNode> _listenerEventNodes;
 
         /// <summary>
         /// Used to keep track of Event Listeners that we have already created Nodes and connections for,
@@ -22,11 +23,20 @@ namespace OpenEvents
         /// </summary>
         private List<GameEventListener> _eventListnersList;
 
+        private GameEventSO _gameEventSO;
+
         #region Graph Creation
 
         public EventGraph(SerializedObject obj, SerializedProperty prop)
         {
+            graphViewChanged -= OnGraphViewChanged;
+            DeleteElements(graphElements);
+            graphViewChanged += OnGraphViewChanged;
+
+
             _eventListnersList = new List<GameEventListener>();
+            _listenerEventNodes = new List<EventNode>();
+            _gameEventSO = obj.targetObject as GameEventSO;
             styleSheets.Add(Resources.Load<StyleSheet>(path: "EventGraphStyleSheet"));
             SetupZoom(ContentZoomer.DefaultMinScale, ContentZoomer.DefaultMaxScale);
 
@@ -39,13 +49,14 @@ namespace OpenEvents
             Insert(index: 0, grid);
             grid.StretchToParentSize();
 
-            BuildEventNodes(obj);
+
+            // Build Nodes for the GameEventSO and its EventListeners
+            BuildGameEventSONode();
+            BuildGameEventListenersNode();
+            // create links
+            BuildNodeConnections();
 
 
-
-            //CreateNodesForEventListeners(prop);
-
-            
         }
 
         #endregion
@@ -55,11 +66,20 @@ namespace OpenEvents
         {
             if (graphViewChange.edgesToCreate != null)
             {
-                graphViewChange.edgesToCreate.ForEach(edge => {
-                    EventNode parent = edge.output.node as EventNode;
-                    EventNode child = edge.input.node as EventNode;
+                foreach(Edge edge in graphViewChange.edgesToCreate)
+                {
                     
-                });
+
+
+
+                    //AddElement(edge);
+                }
+
+                //graphViewChange.edgesToCreate.ForEach(edge => {
+                //    EventNode parent = edge.output.node as EventNode;
+                //    EventNode child = edge.input.node as EventNode;
+
+                //});
             }
 
             return graphViewChange;
@@ -69,13 +89,77 @@ namespace OpenEvents
 
         #region Node Creation
 
+        // Create Node that will represent the GameEventSO
+        private void BuildGameEventSONode()
+        {
+            _gameEventSONode = CreateNode(_gameEventSO.name);
+
+            _gameEventSONode.SetPosition(new Rect(position: new Vector2(_defaultNodeSize.x, _defaultNodeSize.y), size: _defaultNodeSize));
+
+            // GameEventSONode will have an Input(broadcaster) and an Output(listeners)
+            // add Input Port
+            CreatePortOnNode(_gameEventSONode, "Broadcaster", Direction.Input);
+
+
+            // Add the eventSONode node to the graph.
+            AddElement(_gameEventSONode);
+        }
+
+        private void BuildGameEventListenersNode()
+        {
+            EventNode lastNode = null;
+            foreach(GameEventListener listener in GameObject.FindObjectsOfType<GameEventListener>())
+            {
+                if(listener.GameEventSO != _gameEventSO) continue;
+
+                EventNode node = CreateNode(listener.gameObject.name);
+
+                // stack nodes
+                Vector2 position = (lastNode == null) ? _gameEventSONode.Position : lastNode.Position;
+
+                position.x += (lastNode == null) ? (_defaultNodeSize.x * 2) : 0;
+                position.y += (lastNode == null) ? 0 : _defaultNodeSize.y / 2.5f;
+
+                node.SetPosition(new Rect(position, size: _defaultNodeSize));
+
+
+                // Add the eventSONode node to the graph.
+                AddElement(node);
+                _listenerEventNodes.Add(node);
+
+                lastNode = node;
+            }
+        }
+
+        private void BuildNodeConnections()
+        {
+            Port outputPort = CreatePortOnNode(_gameEventSONode, "Listener", Direction.Output, capacity: Port.Capacity.Multi);
+
+            // Add Output Ports to The GameEventSONode
+            for(int i = 0; i < _listenerEventNodes.Count; i++)
+            {
+                
+                Port inputport = CreatePortOnNode(_listenerEventNodes[i], "Trigger", Direction.Input);
+
+
+                Edge edge = outputPort.ConnectTo(inputport);
+
+                AddElement(edge);
+
+                RefreshNodeVisuals(_listenerEventNodes[i]);
+            }
+
+            RefreshNodeVisuals(_gameEventSONode);
+        }
+
+
         private void BuildEventNodes(SerializedObject obj)
         {
             // Create the main node for the GameEventSO
             EventNode eventSONode = CreateNode(obj.targetObject.name);
 
-            // create Port for broadcaster.
-            Port broadcasterPort = CreatePortOnNode(eventSONode, "Broadcaster", Direction.Input);
+            // create Port for broadcaster (Input).
+            CreatePortOnNode(eventSONode, "Broadcaster", Direction.Input);
 
             eventSONode.SetPosition(new Rect(position: Vector2.zero, size: _defaultNodeSize));
 
@@ -84,7 +168,7 @@ namespace OpenEvents
             // this is done because the list of listeners are created during runtime.
             // this button is not 100% needed is the graph window is opened during runtime as the list is already built.
             Button button = new Button(() => {
-                ProcessAllEventListenersComponentsInScene(eventSONode);
+                //ProcessAllEventListenersComponentsInScene(eventSONode);
                 RefreshNodeVisuals(eventSONode);
             });
 
@@ -92,7 +176,7 @@ namespace OpenEvents
             eventSONode.titleButtonContainer.Add(button);
 
             // in-case we have opened the graph view during runtime, we can try to create the listener and broadcaster nodes.
-            ProcessAllEventListenersComponentsInScene(eventSONode);
+            //ProcessAllEventListenersComponentsInScene(eventSONode);
 
 
             // Add the eventSONode node to the graph.
@@ -102,45 +186,16 @@ namespace OpenEvents
             RefreshNodeVisuals(eventSONode);
         }
 
-        private void ProcessAllEventListenersComponentsInScene(EventNode gameEventSONode)
-        {
-            //TODO :: only process listeners that are using the same GameEventSO as we are.
-            foreach(GameEventListener listener in GameObject.FindObjectsOfType<GameEventListener>())
-            {
-                // if we have already processed this listener then skit it.
-                if(_eventListnersList.Contains(listener)) continue;
-                _eventListnersList.Add(listener);
-
-                // Create a port on the Output side of the GameEventSO Node.
-                Port gameEventSOListenerPort = CreatePortOnNode(gameEventSONode, "Listener", Direction.Output, Port.Capacity.Multi);
-
-                // Create a new Node for the Listener.
-                EventNode listenerNode = CreateNode("GameEventListener Component");
-                Port listenerInputPort = CreatePortOnNode(listenerNode, "Event Raised", Direction.Input);
-
-                Edge newEdge = gameEventSOListenerPort.ConnectTo(listenerInputPort);
-
-
-                // --------------------------
-
-                // Add the listenerNode to the graph.
-                AddElement(listenerNode);
-
-                // lastly refresh the node visuals
-                RefreshNodeVisuals(listenerNode);
-            }
-        }
-
         private EventNode CreateNode(string nodeName)
         {
-            EventNode node = new EventNode(Guid.NewGuid().ToString());
+            EventNode node = new EventNode( Guid.NewGuid().ToString() );
             node.title = nodeName;
             return node;
         }
 
         private Port CreatePortOnNode(EventNode node, string portName, Direction portDirection, Port.Capacity capacity = Port.Capacity.Single)
         {
-            Port port = node.InstantiatePort(Orientation.Horizontal, portDirection, capacity, typeof(float));  // <-- Arbitrary type is used to send data along the connection.
+            Port port = node.InstantiatePort(Orientation.Horizontal, portDirection, capacity, typeof(EventNode));  // <-- Arbitrary type is used to send data along the connection.
             port.portName = portName;
 
             if(portDirection == Direction.Input)
